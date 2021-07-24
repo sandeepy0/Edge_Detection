@@ -1,5 +1,6 @@
-DEBUG = False
-color = (255,0,0)
+
+# In[1]:
+#   IMPORTING LIBRARIES
 import numpy as np
 import cv2
 import time
@@ -9,23 +10,30 @@ from cv2.ximgproc import guidedFilter
 from cv2.ximgproc import l0Smooth
 import math
 
+# In[2]:
+#   INITIALIZING VARIABLES
+DEBUG = False
+color = (255,0,0)
 count = 0
 path = "HoughLines/"
 canny_th_1 = 297
 canny_th_2 = 327
+canny_aperture_size = 3
 GB_channel_size = 3
-
+is_polygon = 0
 #Houghlines_1 parameters
 rho1 = 10
 th1 = 1
 minLineLength1 = 25
-maxLineGap1 =20
+maxLineGap1 = 1
+Thetares1 = (math.pi)/2
 
 #Houghlines_2 parameters
 rho2 = 10
 th2 = 1
 minLineLength2 = 1
-maxLineGap2 =20
+maxLineGap2 = 1
+Thetares2 = (math.pi)/2
 
 
 pts1 = [ [190,0],
@@ -37,6 +45,8 @@ pts2 = [ [0,0],
         [40,500],
         [0,500]     ]
 
+# In[3]:
+#   DEFINING FUNCTIONS
 def my_polygon(img,pts):
     line_type = 8
     ppt = np.array(pts, np.int32)
@@ -59,7 +69,6 @@ def Gabor_process(img):
     # gray scale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY).astype(np.float32)
     # define angle
-    #As = [0, 45, 90, 135]
     As = [0, 1*np.pi/2]
     # prepare pyplot
     plt.subplots_adjust(left=0, right=1, top=1, bottom=0, hspace=0, wspace=0.2)
@@ -77,26 +86,27 @@ def Gabor_process(img):
 def nothing(x):
     pass
 
+# In[4]:
+#   MAIN CODE    
 cap = cv2.VideoCapture("video_building.mp4")
-# cap = cv2.VideoCapture("production ID_4434242.mp4")
 cv2.namedWindow('Final_Frame')
 
 #Create two sliders to control parameters respectively.
+cv2.createTrackbar('is_polygon','Final_Frame',is_polygon,1,nothing) #canny lower threshold
+
 cv2.createTrackbar('canny_th_lower','Final_Frame',canny_th_1,1000,nothing) #canny lower threshold
 cv2.createTrackbar('canny_th_upper','Final_Frame',canny_th_2,1000,nothing) #canny upper threshold
+cv2.createTrackbar('canny_aperture_size','Final_Frame',canny_aperture_size,7,nothing) #canny upper threshold
+
 cv2.createTrackbar('Hough_rho_1','Final_Frame',rho1,50,nothing)
-cv2.createTrackbar('Hough_rho_2','Final_Frame',rho2,50,nothing)
 cv2.createTrackbar('Hough_1_th','Final_Frame',th1,100,nothing)
-cv2.createTrackbar('Hough_2_th','Final_Frame',th2,100,nothing)
 cv2.createTrackbar('minLineLength1','Final_Frame',minLineLength1,100,nothing)
-cv2.createTrackbar('minLineLength2','Final_Frame',minLineLength2,100,nothing)
 cv2.createTrackbar('maxLineGap1','Final_Frame',maxLineGap1,100,nothing)
+
+cv2.createTrackbar('Hough_rho_2','Final_Frame',rho2,50,nothing)
+cv2.createTrackbar('Hough_2_th','Final_Frame',th2,100,nothing)
+cv2.createTrackbar('minLineLength2','Final_Frame',minLineLength2,100,nothing)
 cv2.createTrackbar('maxLineGap2','Final_Frame',maxLineGap2,100,nothing)
-
-#cv2.createTrackbar('canny_th_upper','Final_Frame',canny_th_2,1000,nothing)
-#cv2.createTrackbar('canny_th_upper','Final_Frame',canny_th_2,1000,nothing)
-#cv2.createTrackbar('canny_th_upper','Final_Frame',canny_th_2,1000,nothing)
-
 
 # reads frames from a camera
 suc, img = cap.read()
@@ -127,9 +137,12 @@ while True:
         break
     while True:
         guidelines_for_Hough2 = np.zeros((w, h),dtype = "uint8")
-        #taking parameters from Trackbar
+        #taking parameters from Trackbar.
         canny_th_1 = cv2.getTrackbarPos('canny_th_lower','Final_Frame')
         canny_th_2 = cv2.getTrackbarPos('canny_th_upper','Final_Frame')
+        is_polygon = cv2.getTrackbarPos('is_polygon','Final_Frame')
+
+        canny_aperture_size = cv2.getTrackbarPos('canny_aperture_size','Final_Frame')
         Hough_rho_1= cv2.getTrackbarPos('Hough_rho_1','Final_Frame')
         Hough_rho_2= cv2.getTrackbarPos('Hough_rho_2','Final_Frame')
         Hough_1_th = cv2.getTrackbarPos('Hough_1_th','Final_Frame')
@@ -138,8 +151,23 @@ while True:
         minLineLength2 = cv2.getTrackbarPos('minLineLength2','Final_Frame')
         maxLineGap1 = cv2.getTrackbarPos('maxLineGap1','Final_Frame')
         maxLineGap2 = cv2.getTrackbarPos('maxLineGap2','Final_Frame')
-
-  #      GB_channel_size=cv2.getTrackbarPos('GB_channel_size','Final_Frame')
+        
+        
+        
+        #Prevanting variables from becoming equal to zero.
+        canny_th_1 = max(1,canny_th_1)
+        canny_th_2 = max(1,canny_th_2 )
+        Hough_rho_1= max(1,Hough_rho_1 )
+        Hough_rho_2= max(1, Hough_rho_2)
+        Hough_1_th = max(1,Hough_1_th )
+        Hough_2_th = max(1, Hough_2_th)
+        minLineLength1 = max(1,minLineLength1 )
+        minLineLength2 = max(1,minLineLength2 )
+        maxLineGap1 = max(1,maxLineGap1)
+        maxLineGap2 = max(1, maxLineGap2)
+        canny_aperture_size = max(3,canny_aperture_size)
+        
+        is_polygon = bool(is_polygon)
         
         if(DEBUG):
             print(1)
@@ -166,8 +194,14 @@ while True:
         img_gb = cv2.add(out, gray)
         if(DEBUG):
             print(4)    
-        #canny edge ditection
-        edges = cv2.Canny(img_gb,canny_th_1,canny_th_2)
+        #canny edge ditection,
+
+
+        canny_kernal = (canny_aperture_size,canny_aperture_size)
+        edges = cv2.Canny(img_gb,canny_th_1,canny_th_2,canny_kernal)
+        if(is_polygon):
+            edges = my_polygon(edges,pts1)
+            edges = my_polygon(edges,pts2)
         if(DEBUG):    
             print(5) 
             
@@ -183,34 +217,30 @@ while True:
         opening_edges = cv2.morphologyEx(closing, cv2.MORPH_OPEN, kernel)
         
         edges = closing
-        Thetares = (math.pi)/2
         if(DEBUG):
             print(7)  
-        lines = cv2.HoughLinesP(edges,Hough_rho_1,Thetares,Hough_1_th,minLineLength1,maxLineGap1)
+        lines = cv2.HoughLinesP(edges,Hough_rho_1,Thetares1,Hough_1_th,minLineLength1,maxLineGap1)
         Hough_img = blank0.copy()
         Hough_img1=blank0.copy()
         try:
             for line in lines:
                 x1,y1,x2,y2 = line[0]
-                cv2.line(img0,(x1,y1),(x2,y2),(255,255,0),1)
-                cv2.line(Hough_img,(x1,y1),(x2,y2),(255,255,0),1)
+                cv2.line(img0,(x1,y1),(x2,y2),color,1)
+                cv2.line(Hough_img,(x1,y1),(x2,y2),color,1)
                 dynamic_color = (r,g,b)
                 cv2.line(Progress,(x1,y1),(x2,y2),dynamic_color,1)
                 cv2.line(guidelines_for_Hough2,(x1,y1),(x2,y2),1)
-                
         except:
             continue
 
-        Thetares = (math.pi)/2
-        lines = cv2.HoughLinesP(guidelines_for_Hough2,Hough_rho_2,Thetares,Hough_2_th,minLineLength2,maxLineGap2)
+#        Second_close = cv2.morphologyEx(Hough_img, cv2.MORPH_CLOSE, kernel)
+#        cv2.imshow("Second_close",Second_close)
+#        lines = cv2.HoughLinesP(guidelines_for_Hough2,Hough_rho_2,Thetares2,Hough_2_th,minLineLength2,maxLineGap2)
+
         try:
             for line in lines:
                 x1,y1,x2,y2 = line[0]
- #               cv2.line(img0,(x1,y1),(x2,y2),(255,255,0),1)
-  #              cv2.line(Hough_img,(x1,y1),(x2,y2),(255,255,0),1)
-                color = (r,g,b)
                 cv2.line(Hough_img1,(x1,y1),(x2,y2),color,1)
-   #             cv2.line(guidelines_for_Hough2,(x1,y1),(x2,y2),1)
         except:
             continue
         
